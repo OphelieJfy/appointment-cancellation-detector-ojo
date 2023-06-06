@@ -1,7 +1,7 @@
 name: appointment-cancellation-detector
 
 docker-env:
-  image: jedha/sample-mlflow-server
+  image: opheliejfy/appointment-cancellation-detector
   volumes: ["$(pwd):/home/app"]
   environment: [
     "MLFLOW_TRACKING_URI",
