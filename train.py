@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print("training model...")
     
     # Time execution
-    start_time = time.time()
+    #start_time = time.time()
 
     # Call mlflow autolog
     mlflow.sklearn.autolog(log_models=False) # We won't log models right away
@@ -101,4 +101,4 @@ if __name__ == "__main__":
         )
         
     print("...Done!")
-    print(f"---Total training time: {time.time()-start_time}")
+    #print(f"---Total training time: {time.time()-start_time}")
