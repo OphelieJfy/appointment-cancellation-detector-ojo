@@ -1,4 +1,5 @@
 import argparse
+import os
 import pandas as pd
 import time
 import mlflow
@@ -12,26 +13,30 @@ from sklearn.pipeline import Pipeline
 
 if __name__ == "__main__":
 
-    ### MLFLOW Experiment setup
-    experiment_name="appointment_cancellation_detector"
-    mlflow.set_experiment(experiment_name)
-    experiment = mlflow.get_experiment_by_name(experiment_name)
+    # Set your variables for your environment
+    EXPERIMENT_NAME="appointment_cancellation_detector"
 
-    client = mlflow.tracking.MlflowClient()
-    run = client.create_run(experiment.experiment_id)
+    # Set tracking URI to your Heroku application
+    mlflow.set_tracking_uri("https://mlflow-server-ojo.herokuapp.com")
+
+    # Set experiment's info 
+    mlflow.set_experiment(EXPERIMENT_NAME)
+
+    # Get our experiment info
+    experiment = mlflow.get_experiment_by_name(EXPERIMENT_NAME)
 
     print("training model...")
     
     # Time execution
-    #start_time = time.time()
+    start_time = time.time()
 
     # Call mlflow autolog
     mlflow.sklearn.autolog(log_models=False) # We won't log models right away
 
     # Parse arguments given in shell script
     parser = argparse.ArgumentParser()
-    parser.add_argument("--n_estimators")
-    parser.add_argument("--min_samples_split")
+    parser.add_argument("--n_estimators", default=1)
+    parser.add_argument("--min_samples_split", default=2)
     args = parser.parse_args()
 
     # Import dataset
@@ -43,6 +48,8 @@ if __name__ == "__main__":
 
     # Train / test split 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
+
+    print(df.columns)
 
     # Preprocessing 
     def date_processing(df):
@@ -63,11 +70,12 @@ if __name__ == "__main__":
     date_preprocessor = FunctionTransformer(date_processing)
 
     # Preprocessing 
-    categorical_features = ["Gender", "Neighbourhood"] # Select all the columns containing strings
+    X_train_after_date_processing = date_processing(X_train)
+    categorical_features = X_train_after_date_processing.select_dtypes("object").columns # Select all the columns containing strings
     categorical_transformer = OneHotEncoder(drop='first', handle_unknown='error', sparse=False)
 
-    numerical_feature_mask = ~X_train.columns.isin(["Gender", "Neighbourhood", "ScheduledDay","AppointmentDay"]) # Select all the columns containing anything else than strings
-    numerical_features = X_train.columns[numerical_feature_mask]
+    numerical_feature_mask = ~X_train_after_date_processing.columns.isin(X_train_after_date_processing.select_dtypes("object").columns) # Select all the columns containing anything else than strings
+    numerical_features = X_train_after_date_processing.columns[numerical_feature_mask]
     numerical_transformer = StandardScaler()
 
     feature_preprocessor = ColumnTransformer(
@@ -88,7 +96,7 @@ if __name__ == "__main__":
     ])
 
     # Log experiment to MLFlow
-    with mlflow.start_run(run_id = run.info.run_id) as run:
+    with mlflow.start_run(experiment_id = experiment.experiment_id) as run:
         model.fit(X_train, y_train)
         predictions = model.predict(X_train)
 
@@ -101,4 +109,4 @@ if __name__ == "__main__":
         )
         
     print("...Done!")
-    #print(f"---Total training time: {time.time()-start_time}")
+    print(f"---Total training time: {time.time()-start_time}")
