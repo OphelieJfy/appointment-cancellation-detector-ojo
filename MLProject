@@ -1,12 +1,11 @@
-name: appointment-cancellation-detector
+name: appointment_cancellation_detector
 
 docker-env:
   image: opheliejfy/appointment-cancellation-detector
-  volumes: ["$(pwd):/home/app"]
 
 entry_points:
   main:
     parameters:
       n_estimators: {type: int, default: 15}
       min_samples_split: {type: int, default: 3}
-    command: "bash"
+    command: "python train.py --n_estimators {n_estimators} --min_samples_split {min_samples_split}"
